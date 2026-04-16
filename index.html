@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ave Fénix Sabio — Herramienta de Producción</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700&family=Space+Mono&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Syne',sans-serif;background:#0a0a0a;color:#f0f0f0;min-height:100vh;padding:20px}
+  .container{max-width:800px;margin:0 auto}
+
+  /* API KEY SETUP */
+  .key-bar{display:flex;align-items:center;gap:10px;background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:10px 14px;margin-bottom:1.5rem;flex-wrap:wrap}
+  .key-bar label{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+  .key-bar input{flex:1;min-width:200px;font-family:'Space Mono',monospace;font-size:12px;padding:7px 10px;border:1px solid #2a2a2a;border-radius:6px;background:#0a0a0a;color:#c8922a;outline:none}
+  .key-bar input:focus{border-color:#c8922a}
+  .key-save{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;padding:7px 14px;border-radius:6px;background:#c8922a;color:#000;border:none;cursor:pointer;white-space:nowrap}
+  .key-save:hover{opacity:.85}
+  .key-status{font-size:11px;padding:4px 10px;border-radius:20px;white-space:nowrap}
+  .key-status.ok{background:#0a1a0a;color:#4caf50;border:1px solid #1a3a1a}
+  .key-status.no{background:#1a0a0a;color:#ff6666;border:1px solid #3a1a1a}
+
+  .header{display:flex;align-items:center;gap:12px;padding:1rem 0;border-bottom:1px solid #222;margin-bottom:1.5rem}
+  .logo{width:40px;height:40px;background:#c8922a;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px}
+  .header h1{font-size:18px;font-weight:700;color:#f0f0f0}
+  .header p{font-size:12px;color:#888;margin-top:2px}
+  .platforms{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .pb{font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid #333;color:#888;font-family:'Space Mono',monospace}
+
+  .tabs{display:flex;gap:6px;margin-bottom:1.5rem;flex-wrap:wrap}
+  .tab{font-family:'Syne',sans-serif;font-size:13px;padding:8px 16px;border-radius:20px;border:1px solid #333;background:transparent;color:#888;cursor:pointer;transition:all .15s;font-weight:500}
+  .tab.active{background:#c8922a;color:#000;border-color:#c8922a}
+  .tab:hover:not(.active){background:#1a1a1a;color:#f0f0f0}
+
+  .panel{display:none}
+  .panel.active{display:block}
+
+  label{display:block;font-size:11px;font-weight:500;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+  input[type=text],select,textarea{width:100%;font-family:'Syne',sans-serif;font-size:14px;padding:11px 14px;border:1px solid #2a2a2a;border-radius:8px;background:#111;color:#f0f0f0;outline:none;transition:border .15s}
+  input[type=text]:focus,select:focus,textarea:focus{border-color:#c8922a}
+  input[type=text]::placeholder,textarea::placeholder{color:#444}
+  select option{background:#111}
+
+  .row{display:flex;gap:10px;margin-bottom:12px;align-items:flex-end;flex-wrap:wrap}
+  .field{flex:1;min-width:150px}
+
+  .btn{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;padding:12px 24px;border-radius:8px;background:#c8922a;color:#000;border:none;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:8px;transition:opacity .15s}
+  .btn:hover{opacity:.85}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn-sec{background:transparent;border:1px solid #333;color:#888;font-size:12px;padding:6px 14px;border-radius:20px;cursor:pointer;font-family:'Syne',sans-serif;transition:all .15s;margin-top:8px}
+  .btn-sec:hover{background:#1a1a1a;color:#f0f0f0}
+  .btn-sec.copied{border-color:#c8922a;color:#c8922a}
+
+  .spinner{width:14px;height:14px;border:2px solid transparent;border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;display:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .result{display:none;animation:fadeUp .3s ease}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  .block{background:#111;border:1px solid #222;border-radius:12px;padding:1rem 1.2rem;margin-bottom:10px}
+  .block-tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;margin-bottom:8px;background:#1a1a1a;border:1px solid #333;color:#888;text-transform:uppercase;letter-spacing:.05em}
+  .block-text{font-family:'Space Mono',monospace;font-size:12px;line-height:1.8;color:#e0e0e0;white-space:pre-wrap}
+
+  .sec-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:#555;margin:1rem 0 6px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  @media(max-width:600px){.grid2{grid-template-columns:1fr}}
+  .card{background:#111;border:1px solid #222;border-radius:12px;padding:1rem}
+  .card-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#555;margin-bottom:6px}
+  .card-val{font-size:13px;line-height:1.6;color:#e0e0e0}
+
+  .metrics{display:flex;gap:10px;margin-bottom:12px}
+  .metric{background:#111;border-radius:8px;padding:10px 14px;flex:1;text-align:center;border:1px solid #1e1e1e}
+  .metric-val{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:#c8922a}
+  .metric-lbl{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+
+  .hashtag-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .hashtag{font-family:'Space Mono',monospace;font-size:11px;padding:3px 8px;border-radius:20px;background:#1a1a1a;color:#888;border:1px solid #2a2a2a}
+
+  .tip{padding:10px 14px;border-radius:8px;background:#1a1000;border-left:2px solid #c8922a;font-size:12.5px;color:#c8922a;line-height:1.6;margin-bottom:10px}
+  .err{padding:10px 14px;border-radius:8px;background:#1a0000;border-left:2px solid #ff4444;font-size:13px;color:#ff6666;display:none;margin-top:8px}
+  .divider{border:none;border-top:1px solid #1a1a1a;margin:1rem 0}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- API KEY BAR -->
+  <div class="key-bar">
+    <label>API Key</label>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." />
+    <button class="key-save" onclick="saveKey()">Guardar</button>
+    <span class="key-status no" id="keyStatus">Sin key</span>
+  </div>
+
+  <div class="header">
+    <div class="logo">🦅</div>
+    <div>
+      <h1>Ave Fénix Sabio</h1>
+      <p>Herramienta de producción · Motivación · Estoicismo</p>
+    </div>
+    <div class="platforms">
+      <span class="pb">TikTok</span>
+      <span class="pb">Instagram</span>
+      <span class="pb">YouTube</span>
+      <span class="pb">Facebook</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('scripts',this)">Scripts + Brief</button>
+    <button class="tab" onclick="showTab('veo3',this)">Prompts Veo 3</button>
+  </div>
+
+  <!-- TAB SCRIPTS -->
+  <div id="tab-scripts" class="panel active">
+    <div class="row">
+      <div class="field" style="flex:3">
+        <label>Tema del video</label>
+        <input type="text" id="s-tema" placeholder="Ej: El silencio es la respuesta más poderosa..." />
+      </div>
+      <div class="field">
+        <label>Tono</label>
+        <select id="s-tono">
+          <option value="motivacional">Motivacional</option>
+          <option value="estoico">Estoico / profundo</option>
+          <option value="urgente">Urgente / directo</option>
+          <option value="reflexivo">Reflexivo</option>
+          <option value="inspirador">Inspirador</option>
+        </select>
+      </div>
+      <button class="btn" id="s-btn" onclick="generateScript()">
+        <div class="spinner" id="s-spinner"></div>
+        <span id="s-btntxt">Generar</span>
+      </button>
+    </div>
+    <div class="err" id="s-err"></div>
+    <div class="result" id="s-result">
+      <div class="metrics">
+        <div class="metric"><div class="metric-val" id="s-seg">—</div><div class="metric-lbl">segundos</div></div>
+        <div class="metric"><div class="metric-val" id="s-words">—</div><div class="metric-lbl">palabras</div></div>
+        <div class="metric"><div class="metric-val" id="s-hooks">—</div><div class="metric-lbl">ganchos</div></div>
+      </div>
+      <div class="sec-label">Script completo para Antoni (ElevenLabs)</div>
+      <div class="block"><span class="block-tag">Script · voz en off</span><div class="block-text" id="s-script"></div><button class="btn-sec" onclick="cp(this,'s-script')">Copiar script</button></div>
+      <div class="grid2">
+        <div class="block"><span class="block-tag">Título / Caption</span><div class="block-text" id="s-title"></div><button class="btn-sec" onclick="cp(this,'s-title')">Copiar</button></div>
+        <div class="block"><span class="block-tag">Hook visual · primer frame</span><div class="block-text" id="s-hook"></div></div>
+      </div>
+      <div class="block"><span class="block-tag">Descripción · todas las plataformas</span><div class="block-text" id="s-desc"></div><button class="btn-sec" onclick="cp(this,'s-desc')">Copiar</button></div>
+      <div class="block"><span class="block-tag">Dirección de edición</span><div class="block-text" id="s-edit"></div></div>
+      <div class="block">
+        <span class="block-tag">Hashtags</span>
+        <div class="hashtag-list" id="s-tags"></div>
+        <button class="btn-sec" style="margin-top:10px" onclick="cpTags()">Copiar hashtags</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB VEO3 -->
+  <div id="tab-veo3" class="panel">
+    <div class="tip">Paleta fija del canal: deep blacks · warm golden tones · cinematic · 9:16 vertical. Se aplica automáticamente a todos los prompts.</div>
+    <div class="row">
+      <div class="field" style="flex:3">
+        <label>Tema / mensaje del video</label>
+        <input type="text" id="v-tema" placeholder="Ej: El silencio es la respuesta más poderosa..." />
+      </div>
+      <div class="field">
+        <label>Ambiente visual</label>
+        <select id="v-ambiente">
+          <option value="cinematico_oscuro">Cinematográfico oscuro</option>
+          <option value="atardecer_epico">Atardecer épico</option>
+          <option value="ciudad_nocturna">Ciudad nocturna</option>
+          <option value="naturaleza_poderosa">Naturaleza poderosa</option>
+          <option value="templo_antiguo">Templo / ruinas antiguas</option>
+          <option value="tormenta_dramatica">Tormenta dramática</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Personaje</label>
+        <select id="v-personaje">
+          <option value="guerrero_estoico">Guerrero estoico</option>
+          <option value="figura_solitaria">Figura solitaria meditando</option>
+          <option value="fenix">Ave Fénix renaciendo</option>
+          <option value="hombre_pie">Hombre de pie ante el caos</option>
+          <option value="sin_personaje">Sin personaje (solo paisaje)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Hook visual (texto en pantalla)</label>
+        <input type="text" id="v-texto" placeholder="Ej: El silencio dice más que mil palabras..." />
+      </div>
+      <button class="btn" id="v-btn" onclick="generateVeo()">
+        <div class="spinner" id="v-spinner"></div>
+        <span id="v-btntxt">Generar prompts</span>
+      </button>
+    </div>
+    <div class="err" id="v-err"></div>
+    <div class="result" id="v-result">
+      <div class="sec-label">Clip 1 · Hook (0–7s)</div>
+      <div class="block"><span class="block-tag">Veo 3 Prompt</span><div class="block-text" id="v-p1"></div><button class="btn-sec" onclick="cp(this,'v-p1')">Copiar</button></div>
+      <div class="sec-label">Clip 2 · Desarrollo A (7–14s)</div>
+      <div class="block"><span class="block-tag">Veo 3 Prompt</span><div class="block-text" id="v-p2"></div><button class="btn-sec" onclick="cp(this,'v-p2')">Copiar</button></div>
+      <div class="sec-label">Clip 3 · Desarrollo B (14–21s)</div>
+      <div class="block"><span class="block-tag">Veo 3 Prompt</span><div class="block-text" id="v-p3"></div><button class="btn-sec" onclick="cp(this,'v-p3')">Copiar</button></div>
+      <div class="sec-label">Clip 4 · Clímax + CTA (21–28s)</div>
+      <div class="block"><span class="block-tag">Veo 3 Prompt</span><div class="block-text" id="v-p4"></div><button class="btn-sec" onclick="cp(this,'v-p4')">Copiar</button></div>
+      <div class="sec-label">Clip 5 · Cierre Ave Fénix (28–35s)</div>
+      <div class="block"><span class="block-tag">Veo 3 Prompt</span><div class="block-text" id="v-p5"></div><button class="btn-sec" onclick="cp(this,'v-p5')">Copiar</button></div>
+      <div class="sec-label">Portada / Thumbnail</div>
+      <div class="block"><span class="block-tag">MidJourney · Ideogram · Firefly</span><div class="block-text" id="v-portada"></div><button class="btn-sec" onclick="cp(this,'v-portada')">Copiar</button></div>
+      <div class="divider"></div>
+      <div class="grid2">
+        <div class="card"><div class="card-lbl">Configuración en Veo 3</div><div class="card-val" id="v-config"></div></div>
+        <div class="card"><div class="card-lbl">Edición mínima en CapCut</div><div class="card-val" id="v-edicion"></div></div>
+      </div>
+      <div class="tip" id="v-tip" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+</div>
+<script>
+let lastTags = [];
+
+// Cargar key guardada
+window.onload = function() {
+  const saved = localStorage.getItem('afk');
+  if (saved) {
+    document.getElementById('apiKeyInput').value = saved;
+    document.getElementById('keyStatus').textContent = '✓ Key activa';
+    document.getElementById('keyStatus').className = 'key-status ok';
+  }
+};
+
+function saveKey() {
+  const k = document.getElementById('apiKeyInput').value.trim();
+  if (!k || !k.startsWith('sk-ant')) {
+    alert('API key inválida. Debe comenzar con sk-ant-...');
+    return;
+  }
+  localStorage.setItem('afk', k);
+  document.getElementById('keyStatus').textContent = '✓ Key activa';
+  document.getElementById('keyStatus').className = 'key-status ok';
+}
+
+function getKey() {
+  return localStorage.getItem('afk') || document.getElementById('apiKeyInput').value.trim();
+}
+
+function showTab(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  el.classList.add('active');
+}
+
+async function callAPI(system, user) {
+  const key = getKey();
+  if (!key) throw new Error('Sin API key');
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      system,
+      messages: [{ role: 'user', content: user }]
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  const raw = data.content.map(i => i.text || '').join('');
+  return JSON.parse(raw.replace(/```json|```/g, '').trim());
+}
+
+async function generateScript() {
+  const tema = document.getElementById('s-tema').value.trim();
+  if (!tema) { showErr('s-err', 'Escribe el tema del video.'); return; }
+  if (!getKey()) { showErr('s-err', 'Primero guarda tu API key arriba.'); return; }
+  const tono = document.getElementById('s-tono').value;
+  setLoad('s', true);
+  document.getElementById('s-result').style.display = 'none';
+  hideErr('s-err');
+  try {
+    const d = await callAPI(
+      `Eres experto en contenido viral de motivación y estoicismo en español para el canal Ave Fénix Sabio (TikTok, Instagram, YouTube, Facebook). Videos máximo 35 segundos (~85 palabras). El Ave Fénix solo aparece al cierre, nunca en el mensaje. Responde SOLO en JSON sin markdown sin backticks.`,
+      `Brief completo para video sobre: "${tema}" · Tono: ${tono}
+Devuelve exactamente este JSON:
+{"script":"guión 3 partes separadas por \\n\\n--- DESARROLLO ---\\n\\n y \\n\\n--- CIERRE / CTA ---\\n\\n · máx 85 palabras · frases cortas impactantes","title":"título con emojis máx 80 chars","hook_visual":"descripción del primer frame visual y texto en pantalla","description":"descripción 2-3 líneas con CTA para todas las plataformas con emojis","edit_direction":"4 instrucciones de edición concretas","hashtags":["tag1","tag2","tag3","tag4","tag5","tag6","tag7","tag8","tag9","tag10","tag11","tag12","tag13","tag14","tag15"],"word_count":75,"estimated_seconds":30,"hooks_count":2}`
+    );
+    document.getElementById('s-seg').textContent = d.estimated_seconds + 's';
+    document.getElementById('s-words').textContent = d.word_count;
+    document.getElementById('s-hooks').textContent = d.hooks_count;
+    document.getElementById('s-script').textContent = d.script;
+    document.getElementById('s-title').textContent = d.title;
+    document.getElementById('s-hook').textContent = d.hook_visual;
+    document.getElementById('s-desc').textContent = d.description;
+    document.getElementById('s-edit').textContent = d.edit_direction;
+    lastTags = d.hashtags || [];
+    const tl = document.getElementById('s-tags');
+    tl.innerHTML = '';
+    lastTags.forEach(h => {
+      const s = document.createElement('span');
+      s.className = 'hashtag';
+      s.textContent = h.startsWith('#') ? h : '#'+h;
+      tl.appendChild(s);
+    });
+    document.getElementById('s-result').style.display = 'block';
+  } catch(e) {
+    showErr('s-err', 'Error: ' + e.message);
+  } finally { setLoad('s', false); }
+}
+
+async function generateVeo() {
+  const tema = document.getElementById('v-tema').value.trim();
+  if (!tema) { showErr('v-err', 'Escribe el tema del video.'); return; }
+  if (!getKey()) { showErr('v-err', 'Primero guarda tu API key arriba.'); return; }
+  const ambiente = document.getElementById('v-ambiente').value;
+  const personaje = document.getElementById('v-personaje').value;
+  const texto = document.getElementById('v-texto').value.trim();
+  setLoad('v', true);
+  document.getElementById('v-result').style.display = 'none';
+  hideErr('v-err');
+
+  const am = {
+    cinematico_oscuro: 'cinematic dark atmosphere, dramatic low-key lighting, deep shadows, golden rim light',
+    atardecer_epico: 'epic golden sunset, dramatic sky, warm orange and red tones, volumetric light rays',
+    ciudad_nocturna: 'moody night cityscape, neon reflections, rain-slicked streets, atmospheric fog',
+    naturaleza_poderosa: 'powerful nature, mountains at dawn, mist rising, raw natural light',
+    templo_antiguo: 'ancient ruins, stone pillars, torch light, mystical atmosphere, ivy and fog',
+    tormenta_dramatica: 'dramatic storm, lightning in distance, dark clouds, powerful wind, rain'
+  };
+  const pe = {
+    guerrero_estoico: 'a lone stoic warrior figure, standing still, calm and powerful posture, dark cloak',
+    figura_solitaria: 'a solitary figure in deep meditation, seated on a rock, eyes closed, serene expression',
+    fenix: 'a majestic phoenix rising from golden embers, wings spread wide, fire and light particles',
+    hombre_pie: 'a strong man standing alone facing the storm, back to camera, determined posture',
+    sin_personaje: 'no human figures, focus on landscape and atmosphere only'
+  };
+
+  try {
+    const d = await callAPI(
+      `Eres experto en prompts para Veo 3 de Google para el canal Ave Fénix Sabio. Paleta siempre: deep blacks, warm golden tones, cinematic, vertical 9:16, no text overlays, photorealistic. Genera 5 prompts en inglés de 6-7s cada uno + prompt de portada. Responde SOLO en JSON sin markdown sin backticks.`,
+      `Genera prompts Veo 3 para: "${tema}"
+Ambiente: ${am[ambiente]}
+Personaje: ${pe[personaje]}
+Hook visual: ${texto || 'libre'}
+Devuelve exactamente este JSON:
+{"p1":"prompt clip 1 hook 0-7s en inglés 100+ palabras","p1_texto":"texto en pantalla clip 1","p2":"prompt clip 2 desarrollo A 7-14s","p2_texto":"texto en pantalla clip 2","p3":"prompt clip 3 desarrollo B 14-21s","p3_texto":"texto en pantalla clip 3","p4":"prompt clip 4 climax CTA 21-28s","p4_texto":"texto en pantalla clip 4","p5":"prompt clip 5 cierre Ave Fenix phoenix rising 28-35s","p5_texto":"slogan del canal","portada":"prompt imagen estática 16:9 thumbnail épico con phoenix","config":"ajustes recomendados en Veo 3","edicion":"4 pasos mínimos en CapCut","tip":"consejo crítico para que este set funcione"}`
+    );
+    document.getElementById('v-p1').textContent = d.p1 + '\n\nTEXTO EN PANTALLA: ' + d.p1_texto;
+    document.getElementById('v-p2').textContent = d.p2 + '\n\nTEXTO EN PANTALLA: ' + d.p2_texto;
+    document.getElementById('v-p3').textContent = d.p3 + '\n\nTEXTO EN PANTALLA: ' + d.p3_texto;
+    document.getElementById('v-p4').textContent = d.p4 + '\n\nTEXTO EN PANTALLA: ' + d.p4_texto;
+    document.getElementById('v-p5').textContent = d.p5 + '\n\nTEXTO EN PANTALLA: ' + d.p5_texto;
+    document.getElementById('v-portada').textContent = d.portada;
+    document.getElementById('v-config').textContent = d.config;
+    document.getElementById('v-edicion').textContent = d.edicion;
+    document.getElementById('v-tip').textContent = '⚡ ' + d.tip;
+    document.getElementById('v-result').style.display = 'block';
+  } catch(e) {
+    showErr('v-err', 'Error: ' + e.message);
+  } finally { setLoad('v', false); }
+}
+
+function cp(btn, id) {
+  navigator.clipboard.writeText(document.getElementById(id).textContent.trim()).catch(()=>{});
+  const o = btn.textContent;
+  btn.textContent = '✓ Copiado';
+  btn.classList.add('copied');
+  setTimeout(()=>{ btn.textContent = o; btn.classList.remove('copied'); }, 2000);
+}
+function cpTags() {
+  navigator.clipboard.writeText(lastTags.map(h => h.startsWith('#') ? h : '#'+h).join(' ')).catch(()=>{});
+}
+function setLoad(p, v) {
+  document.getElementById(p+'-btn').disabled = v;
+  document.getElementById(p+'-spinner').style.display = v ? 'block' : 'none';
+  document.getElementById(p+'-btntxt').textContent = v ? 'Generando...' : (p==='s' ? 'Generar' : 'Generar prompts');
+}
+function showErr(id, msg) { const e = document.getElementById(id); e.textContent = msg; e.style.display = 'block'; }
+function hideErr(id) { document.getElementById(id).style.display = 'none'; }
+
+document.getElementById('s-tema').addEventListener('keydown', e => { if(e.key==='Enter') generateScript(); });
+document.getElementById('v-tema').addEventListener('keydown', e => { if(e.key==='Enter') generateVeo(); });
+</script>
+</body>
+</html>
